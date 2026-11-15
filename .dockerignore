@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+.env
+.env.*
+alerts.yaml
+data
+*.sqlite*
+*.db*
+*.tsbuildinfo

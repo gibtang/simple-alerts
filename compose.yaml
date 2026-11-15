@@ -1,0 +1,32 @@
+name: simple-alerts
+
+x-common: &common
+  image: simple-alerts:local
+  build: .
+  restart: unless-stopped
+  init: true
+  env_file: .env
+  environment:
+    ALERTS_CONFIG: /app/alerts.yaml
+    ALERTS_DATABASE_PATH: /app/data/alerts.sqlite
+  volumes:
+    - ./alerts.yaml:/app/alerts.yaml:ro
+    - alerts-data:/app/data
+
+services:
+  dashboard:
+    <<: *common
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+  worker:
+    <<: *common
+    command: ["./node_modules/.bin/tsx", "src/server/worker.ts"]
+
+volumes:
+  alerts-data:
