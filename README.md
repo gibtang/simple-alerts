@@ -4,6 +4,95 @@ Self-hosted error alerts for Next.js. Send reports directly to your own server, 
 
 MIT licensed. One installation serves one operator and multiple monitored projects.
 
+## Contents
+
+- [Install](#install) — Docker Compose (recommended) or Node.js source
+- [Configure](#configure) — `alerts.yaml`, `.env`, per-project Telegram routing
+- [YAML configuration](#yaml-configuration) — full reference
+- [Connect a Next.js application](#connect-a-nextjs-application) — SDK integration
+- [Alert and delivery behavior](#alert-and-delivery-behavior)
+- [Docker deployment](#docker-deployment) — operations, [backup](#backup), [restore](#restore)
+- [Privacy and security](#privacy-and-security)
+- [Development and verification](#development-and-verification)
+
+## Install
+
+Requirements: Docker with Compose, or Node.js 24 LTS and npm. Either path runs the same two processes — a dashboard and a delivery worker — sharing one SQLite database.
+
+**Option A — Docker Compose (recommended):**
+
+```sh
+git clone https://github.com/gibtang/simple-alerts.git
+cd simple-alerts
+cp .env.example .env          # fill in secrets, see Configure below
+cp alerts.example.yaml alerts.yaml
+docker compose up --build -d
+docker compose logs -f dashboard worker
+```
+
+The dashboard listens on `127.0.0.1:3000`. Put an HTTPS reverse proxy in front of it and set `ALERTS_BASE_URL` in `.env` to the public HTTPS origin before first start.
+
+**Option B — Node.js source:**
+
+```sh
+git clone https://github.com/gibtang/simple-alerts.git
+cd simple-alerts
+npm ci
+cp .env.example .env          # fill in secrets, see Configure below
+cp alerts.example.yaml alerts.yaml
+npm run build                 # production build (also builds the SDK)
+npm start                     # terminal 1: dashboard on :3000
+npm run worker                # terminal 2: delivery worker (separate process)
+```
+
+For development instead: `npm run dev` replaces `npm run build` + `npm start`.
+
+Then open `http://localhost:3000` (or your HTTPS origin), log in as the configured `auth.username` with the password you hashed, select a project, and press **Send test alert** to verify Telegram routing end to end.
+
+## Configure
+
+All configuration is file-based; the dashboard never edits it. Restart both processes after any change. Use HTTPS outside localhost, and set `ALERTS_BASE_URL` to the exact externally visible origin (including any nonstandard port): login and all browser mutation requests are checked against this origin, so keep hostname and scheme consistent.
+
+**1. `alerts.yaml`** — copy [`alerts.example.yaml`](./alerts.example.yaml). Full field reference in [YAML configuration](#yaml-configuration). The part you will edit most is `projects`: one entry per monitored application, each with its own reporting key and Telegram destination:
+
+```yaml
+telegram:
+  botToken: "${TELEGRAM_BOT_TOKEN}"   # one bot per installation
+projects:
+  - id: check-mcc
+    name: Check MCC
+    key: "${CHECK_MCC_REPORTING_KEY}"
+    chatId: "${CHECK_MCC_TELEGRAM_CHAT_ID}"   # chat where this project's alerts go
+  - id: my-other-app
+    name: My other app
+    key: "${OTHER_APP_REPORTING_KEY}"
+    chatId: "${MY_APP_TELEGRAM_CHAT_ID}"      # can be the same or a different chat
+```
+
+Alerts for a project are delivered by the installation's `botToken` to that project's `chatId` — e.g. a bot that already posts check-mcc messages can receive Simple Alerts alerts in the same chat by setting that project's `chatId` to it. The bot must be a member of every target chat. Keep chat IDs quoted (they can be large or negative for groups).
+
+**2. `.env`** — copy `.env.example`. Every `${NAME}` in the YAML resolves from here (dotenv); a missing variable fails startup. Values to fill:
+
+| Variable | What it is | How to generate |
+| --- | --- | --- |
+| `ALERTS_BASE_URL` | Public origin, e.g. `https://alerts.example.com` | Your reverse-proxy URL; `http://localhost:3000` for local |
+| `ALERTS_DATABASE_PATH` | SQLite file path | Default `./data/alerts.sqlite` (Compose overrides to `/app/data/...`) |
+| `ALERTS_SESSION_SECRET` | Dashboard session signing key | `openssl rand -hex 32` |
+| `ALERTS_PASSWORD_HASH` | Dashboard password hash | `npm run password`, paste output, keep single-quoted |
+| `TELEGRAM_BOT_TOKEN` | Bot that sends alerts | [@BotFather](https://t.me/BotFather) → `/newbot` |
+| `<PROJECT>_REPORTING_KEY` | Ingestion bearer key per project | `openssl rand -hex 32`, one per project |
+| `<PROJECT>_TELEGRAM_CHAT_ID` | Destination chat per project | Message the bot, then read `chat.id` from `getUpdates` |
+
+Chat ID via getUpdates: start a conversation with your bot in the target chat, then:
+
+```sh
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates" | jq '.[].message.chat.id'
+```
+
+The password helper prompts without echoing and prints a colon-delimited scrypt hash (`scrypt:N:r:p:salt:hash`). This format avoids shell/env expansion problems with `$` characters. Keep the entire hash single-quoted in `.env`.
+
+Never commit populated `.env`, `alerts.yaml`, databases, backups, or real error reports.
+
 ## What it does
 
 - Password-protected dashboard with project filtering, error groups, occurrence details, stack traces, and delivery history.
@@ -33,57 +122,6 @@ Browser errors -> monitored app's same-origin relay +-> authenticated ingestion
 ```
 
 The dashboard and worker are separate processes on one host sharing one local SQLite database. Both must run. Do not mount the database over NFS or share it between independent hosts. Horizontal replicas and high availability are not supported.
-
-## Quick start
-
-Requirements: Node.js 24 LTS and npm, or Docker with Compose. Create a Telegram bot through [BotFather](https://t.me/BotFather), start a conversation with it, and obtain your chat ID. Group destinations require adding the bot with permission to send messages. Keep the bot token private.
-
-```sh
-npm ci
-cp .env.example .env
-cp alerts.example.yaml alerts.yaml
-npm run password
-```
-
-The password helper prompts without echoing your password and prints a colon-delimited scrypt hash. This format avoids Next.js environment-variable expansion of dollar signs. Put the hash in `.env`, keeping the entire value single-quoted. Generate separate secrets with `openssl rand -hex 32` for the session and each project's reporting key.
-
-Complete these values in `.env`:
-
-```dotenv
-ALERTS_CONFIG=./alerts.yaml
-ALERTS_BASE_URL=http://localhost:3000
-ALERTS_DATABASE_PATH=./data/alerts.sqlite
-ALERTS_SESSION_SECRET=your-independently-generated-session-secret
-ALERTS_PASSWORD_HASH='paste-the-generated-scrypt-hash-here'
-TELEGRAM_BOT_TOKEN=your-bot-token
-MY_APP_REPORTING_KEY=your-independently-generated-project-key
-MY_APP_TELEGRAM_CHAT_ID=your-chat-id
-```
-
-The text above is illustrative, not valid credentials. Never commit populated `.env` files, `alerts.yaml`, databases, backups, or real error reports.
-
-Start two terminals:
-
-```sh
-# Terminal 1
-npm run dev
-
-# Terminal 2
-npm run worker
-```
-
-Open `http://localhost:3000`, log in as `operator` with the password you hashed, select your project, and use **Send test alert**. Inspect its delivery status in the dashboard. No application error is needed to test routing.
-
-For a production Node deployment:
-
-```sh
-npm run build
-npm start
-# Run separately under a process supervisor:
-npm run worker
-```
-
-Use HTTPS outside localhost. Set `server.baseUrl` to the exact externally visible origin, including any nonstandard port. Keep hostname and scheme consistent when logging in; browser mutation requests are checked against this origin.
 
 ## YAML configuration
 
