@@ -1,4 +1,11 @@
-# Copy to alerts.yaml. Restart both processes after changes.
+# Simple Alerts configuration.
+#
+# Committed env-ref-only copy doubles as the deployed configuration: the
+# Compose stack mounts this file at /app/alerts.yaml and Coolify (or your
+# local .env via dotenv) supplies the real values. `${NAME}` references fail
+# startup when the variable is missing. Restart both processes after changes.
+#
+# For a minimal local setup, copy this file to alerts.yaml and fill values.
 server:
   baseUrl: "${ALERTS_BASE_URL}"
   databasePath: "${ALERTS_DATABASE_PATH}"
@@ -9,10 +16,50 @@ auth:
 telegram:
   botToken: "${TELEGRAM_BOT_TOKEN}"
 projects:
-  - id: my-app
-    name: My Next.js app
-    key: "${MY_APP_REPORTING_KEY}"
-    chatId: "${MY_APP_TELEGRAM_CHAT_ID}"
+  # One entry per monitored application. Reporting keys are bearer secrets for
+  # /api/ingest; chat IDs are where each project's alerts are delivered. All
+  # projects here deliver to the operator chat (OPERATOR_TELEGRAM_CHAT_ID);
+  # point any project at a different chat by changing only its chatId.
+  - id: check-mcc
+    name: Check MCC
+    key: "${CHECK_MCC_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: dramasub
+    name: DramaSub
+    key: "${DRAMASUB_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: stork-ticker
+    name: Stork Ticker
+    key: "${STORK_TICKER_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: hotel-like
+    name: Hotel-Like
+    key: "${HOTEL_LIKE_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: form-like
+    name: Form-Like
+    key: "${FORM_LIKE_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: thepostdrop
+    name: The Postdrop
+    key: "${THEPOSTDROP_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: ai-downdetector
+    name: AI Down Detector
+    key: "${AI_DOWNDETECTOR_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: japan-like
+    name: Japan-Like
+    key: "${JAPAN_LIKE_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: korea-like
+    name: Korea-Like
+    key: "${KOREA_LIKE_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
+  - id: taiwan-like
+    name: Taiwan-Like
+    key: "${TAIWAN_LIKE_REPORTING_KEY}"
+    chatId: "${OPERATOR_TELEGRAM_CHAT_ID}"
 alerts:
   repeatIntervalSeconds: 300
   retryWindowHours: 24

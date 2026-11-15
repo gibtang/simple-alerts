@@ -5,12 +5,12 @@ x-common: &common
   build: .
   restart: unless-stopped
   init: true
-  env_file: .env
   environment:
     ALERTS_CONFIG: /app/alerts.yaml
     ALERTS_DATABASE_PATH: /app/data/alerts.sqlite
   volumes:
-    - ./alerts.yaml:/app/alerts.yaml:ro
+    # Committed env-ref-only configuration; real values arrive via environment.
+    - ./alerts.example.yaml:/app/alerts.yaml:ro
     - alerts-data:/app/data
 
 services:
