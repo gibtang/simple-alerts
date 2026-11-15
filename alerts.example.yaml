@@ -1,0 +1,19 @@
+# Copy to alerts.yaml. Restart both processes after changes.
+server:
+  baseUrl: "${ALERTS_BASE_URL}"
+  databasePath: "${ALERTS_DATABASE_PATH}"
+  sessionSecret: "${ALERTS_SESSION_SECRET}"
+auth:
+  username: operator
+  passwordHash: "${ALERTS_PASSWORD_HASH}"
+telegram:
+  botToken: "${TELEGRAM_BOT_TOKEN}"
+projects:
+  - id: my-app
+    name: My Next.js app
+    key: "${MY_APP_REPORTING_KEY}"
+    chatId: "${MY_APP_TELEGRAM_CHAT_ID}"
+alerts:
+  repeatIntervalSeconds: 300
+  retryWindowHours: 24
+retentionDays: 30

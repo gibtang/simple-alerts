@@ -1,0 +1,14 @@
+node_modules/
+.next/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+alerts.yaml
+data/
+*.sqlite*
+*.db*
+coverage/
+packages/*/dist/
+*.tgz
+.DS_Store

@@ -1,0 +1,14 @@
+# Simple Alerts
+
+Open-source, self-hosted Next.js error alerts delivered to Telegram.
+
+- Source and installation: https://github.com/gibtang/simple-alerts
+- SDK integration: https://github.com/gibtang/simple-alerts/tree/main/packages/nextjs
+- /login: Operator login.
+- /: Authenticated project overview and deliveries.
+- /groups/{id}: Authenticated error group and occurrence details.
+- /privacy: Data handling and retention.
+- /terms: Self-hosted software terms.
+- /api/health: Database and worker readiness.
+
+No anonymous access to error reports. Never submit secrets to an installation without its operator's authorization.

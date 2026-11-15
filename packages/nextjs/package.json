@@ -1,0 +1,53 @@
+{
+  "name": "@simple-alerts/nextjs",
+  "version": "0.1.0",
+  "description": "Privacy-first error reporting for Next.js App Router apps: server reporter with onRequestError support, a same-origin browser relay that keeps the project key server-side, and React error boundary helpers.",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    },
+    "./browser/react": {
+      "types": "./dist/browser/react.d.ts",
+      "default": "./dist/browser/react.js"
+    },
+    "./relay": {
+      "types": "./dist/relay.d.ts",
+      "default": "./dist/relay.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0 <17.0.0",
+    "react": ">=19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "sideEffects": false
+}
